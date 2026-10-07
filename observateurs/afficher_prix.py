@@ -24,6 +24,31 @@ class AfficherPrix(Observateur):
         self.frames_prix[ticker] = frame
 
 
-    # MÉTHODE POUR METTRE A JOUR LES PRIX (À FAIRE)
+    # MÉTHODE POUR METTRE A JOUR LES PRIX
     def actualiser(self, sujet):
-        pass
+        # get_donnees() fournit les prix sous la forme ticker: (prix, ouverture).
+        donnees = sujet.get_donnees()
+        prix_actuels = donnees["prix_actuels"]
+        titres = donnees["titres"]
+
+        for ticker in list(self.labels_prix):
+            if ticker not in titres:
+                self.frames_prix.pop(ticker).destroy()
+                del self.labels_prix[ticker]
+
+        for ticker in titres:
+            if ticker not in self.labels_prix:
+                self._creer_ligne_prix(ticker)
+
+        for ticker, (prix, ouverture) in prix_actuels.items():
+            if ticker not in titres:
+                continue
+            if ouverture:
+                variation = (prix - ouverture) / ouverture * 100
+                symbole = "▲" if variation >= 0 else "▼"
+                couleur = "green" if variation >= 0 else "red"
+                texte = f"{prix:.2f} $  {symbole} {abs(variation):.2f}%"
+            else:
+                texte = f"{prix:.2f} $  (ouverture indisponible)"
+                couleur = "gray"
+            self.labels_prix[ticker].config(text=texte, fg=couleur)
