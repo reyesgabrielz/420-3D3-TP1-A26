@@ -1,3 +1,4 @@
+from datetime import datetime
 import tkinter as tk
 from .observateur import Observateur
 
@@ -14,6 +15,28 @@ class AfficherAlertes(Observateur):
         self.label_maj.pack(pady=5)
 
 
-    # MÉTHODE POUR METTRE A JOUR LES ALERTES (À FAIRE)
+    # MÉTHODE POUR METTRE A JOUR LES ALERTES
     def actualiser(self, sujet):
-        pass
+        donnees = sujet.get_donnees()
+        titres = donnees["titres"]
+        alertes = []
+        for ticker, (prix, _) in donnees["prix_actuels"].items():
+            if ticker not in titres:
+                continue
+            seuil_haut = titres[ticker]["seuil_haut"]
+            seuil_bas = titres[ticker]["seuil_bas"]
+            if prix >= seuil_haut:
+                alertes.append(
+                    f"⚠️ {ticker} dépasse le seuil haut ({prix:.2f} $ ≥ {seuil_haut:.2f} $)"
+                )
+            elif prix <= seuil_bas:
+                alertes.append(
+                    f"⚠️ {ticker} sous le seuil bas ({prix:.2f} $ ≤ {seuil_bas:.2f} $)"
+                )
+
+        self.label_alertes.config(
+            text="\n".join(alertes) if alertes else "Aucune alerte",
+            fg="red" if alertes else "gray",
+        )
+        horodatage = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.label_maj.config(text=f"Dernière mise à jour : {horodatage}", fg="gray")

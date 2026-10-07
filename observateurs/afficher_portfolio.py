@@ -12,6 +12,30 @@ class AfficherPortfolio(Observateur):
         self.label_variation.pack()
 
 
-    # MÉTHODE POUR METTRE A JOUR LA VALEUR DU PORTFOLIO (À FAIRE)
+    # MÉTHODE POUR METTRE A JOUR LA VALEUR DU PORTFOLIO
     def actualiser(self, sujet):
-        pass
+        donnees = sujet.get_donnees()
+        prix_actuels = donnees["prix_actuels"]
+        titres = donnees["titres"]
+
+        valeur_totale = sum(
+            prix * titres[ticker]["quantite"]
+            for ticker, (prix, _) in prix_actuels.items() if ticker in titres
+        )
+        self.label_valeur.config(text=f"Valeur totale : {valeur_totale:.2f} $")
+
+        if any(ouverture is None or ouverture == 0
+               for ticker, (_, ouverture) in prix_actuels.items() if ticker in titres):
+            self.label_variation.config(text="Variation indisponible", fg="gray")
+            return
+
+        valeur_ouverture = sum(
+            ouverture * titres[ticker]["quantite"]
+            for ticker, (_, ouverture) in prix_actuels.items() if ticker in titres
+        )
+        variation = valeur_totale - valeur_ouverture
+        symbole = "▲" if variation >= 0 else "▼"
+        self.label_variation.config(
+            text=f"{symbole} {abs(variation):.2f} $ depuis l'ouverture",
+            fg="green" if variation >= 0 else "red",
+        )
