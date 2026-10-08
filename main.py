@@ -2,7 +2,6 @@ from views.fenetre_principale import FenetrePrincipale
 from observateurs.afficher_prix import AfficherPrix
 from observateurs.afficher_portfolio import AfficherPortfolio
 from observateurs.afficher_alertes import AfficherAlertes
-from observateurs.afficher_titres import AfficherTitres
 from observateurs.journal_csv import JournalCSV
 
 TITRES = {
@@ -16,7 +15,6 @@ INTERVALLE_MS = 30000  # Fréquence de rafraîchissement des prix (30 secondes)
 if __name__ == "__main__":
     app = FenetrePrincipale()
     affichage_prix = AfficherPrix(app.fenetre, TITRES)
-    affichage_titres = AfficherTitres(app.fenetre, TITRES)
     affichage_portfolio = AfficherPortfolio(app.fenetre)
     affichage_alertes = AfficherAlertes(app.fenetre)
     journal_csv = JournalCSV("portfolio.csv")
