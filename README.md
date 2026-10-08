@@ -2,51 +2,64 @@
 
 ## Présentation
 
-Vous devez refactoriser une application de suivi de portefeuille boursier
-en appliquant le **patron Observateur**.
+Ce projet refactorise une application de suivi de portefeuille boursier en appliquant le **patron Observateur**.
 
-L'application surveille en temps réel le prix de plusieurs titres boursiers
-via l'API `yfinance` et notifie plusieurs composants à chaque mise à jour.
+Les prix sont récupérés avec `yfinance` toutes les 30 secondes. Le portefeuille notifie ensuite les observateurs pour actualiser les affichages et enregistrer les données.
 
----
+## Installation et lancement
 
-## Mise en place
+Créer l’environnement virtuel :
 
 ```bash
 python -m venv venv
-source venv/bin/activate  # Linux / macOS
-venv\Scripts\activate     # Windows
+```
+
+L’activer selon votre système :
+
+```powershell
+# Windows — PowerShell
+.\venv\Scripts\Activate.ps1
+```
+
+```bash
+# Linux / macOS
+source venv/bin/activate
+```
+
+Installer les dépendances et lancer l’application :
+
+```bash
 pip install -r requirements.txt
-python app.py
+python main.py
 ```
 
----
+## Fonctionnalités actuelles
 
-## Fonctionnement de l'application existante
+- Affichage des prix et de leur variation depuis l’ouverture.
+- Calcul et affichage de la valeur totale du portefeuille.
+- Alertes visuelles selon les seuils définis pour chaque titre.
+- Enregistrement des prix dans `portfolio.csv` à chaque rafraîchissement.
 
-L'application surveille les titres boursiers ajoutés au portefeuille et toutes
-les 30 secondes :
+L’ajout, la modification et le retrait des titres restent à intégrer dans la version refactorisée.
 
-- Affichage du prix actuel et de la variation depuis l'ouverture pour chaque titre
-- Affichage de la valeur totale du portefeuille et de sa variation
-- Alertes visuelles quand un titre dépasse ou descend sous un seuil défini
-- Ajout de nouveaux titres boursiers via l'interface
-- Modification des quantités d'actions pour chaque titre
-- Enregistrement des données dans un fichier CSV à chaque mise à jour
+## Organisation du projet
 
+- `main.py` : crée les objets, abonne les observateurs et programme le rafraîchissement.
+- `modeles/` : contient la classe abstraite `Sujet` et le sujet concret `Portefeuille`.
+- `observateurs/` : contient la classe abstraite `Observateur` et les quatre observateurs concrets.
+- `views/` : contient la fenêtre principale et les styles de l’interface.
+- `docs/UML.png` : présente le diagramme de classes.
+- `app.py` : conserve l’application originale avant le refactoring.
 
----
+## Fonctionnement du patron Observateur
 
-## Ce qui est fourni dans la branche `refactor`
+`Portefeuille` conserve les titres et les prix. Sa méthode `rafraichir_prix()` récupère les prix, puis appelle `notifier()`.
 
-```
-portfolio/
-├── main.py                  ← à compléter
-├── requirements.txt
-├── models/
-│   └── subject.py           ← interface Sujet (complète — ne pas modifier)
-└── observers/
-    └── observer.py          ← interface Observateur (complète — ne pas modifier)
-```
+Chaque observateur abonné reçoit cet appel dans sa méthode `actualiser(sujet)` et récupère les données avec `get_donnees()`, qui retourne un dictionnaire.
 
-Tout le reste est à créer.
+Les quatre observateurs sont :
+
+- **AfficherPrix** : affiche les prix et leurs variations.
+- **AfficherPortfolio** : calcule et affiche la valeur totale et sa variation.
+- **AfficherAlertes** : affiche les alertes selon les seuils.
+- **JournalCSV** : observateur non visuel qui enregistre les prix dans un fichier CSV.
