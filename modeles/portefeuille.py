@@ -10,6 +10,34 @@ class Portefeuille(Sujet):
         }
         self.prix_actuels = {}
 
+    def ajouter_titre(self, ticker, infos):
+        ticker = ticker.strip().upper()
+
+        if not ticker:
+            raise ValueError("Le ticker ne peut pas etre vide.")
+
+        if ticker in self._titres:
+            raise ValueError(f"{ticker} est deja dans le portefeuille.")
+
+        self._titres[ticker] = infos.copy()
+        self.prix_actuels.pop(ticker, None)
+        self.notifier()
+
+    def retirer_titre(self, ticker):
+        if ticker not in self._titres:
+            raise ValueError(f"{ticker} n'est pas dans le portefeuille.")
+
+        del self._titres[ticker]
+        self.prix_actuels.pop(ticker, None)
+        self.notifier()
+
+    def modifier_titre(self, ticker, changements):
+        if ticker not in self._titres:
+            raise ValueError(f"{ticker} n'est pas dans le portefeuille.")
+
+        self._titres[ticker].update(changements)
+        self.notifier()
+
     def rafraichir_prix(self):
         nouveaux_prix = {}
 

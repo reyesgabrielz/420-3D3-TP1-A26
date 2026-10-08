@@ -3,8 +3,9 @@ from .observateur import Observateur
 import yfinance as yf
 
 class AfficherTitres(Observateur):
-    def __init__(self, fenetre, titres):
-        self.titres = titres
+    def __init__(self, fenetre, portefeuille):
+        self.portefeuille = portefeuille
+        self.titres = portefeuille.get_donnees()["titres"]
 
         self.frame_titres = tk.LabelFrame(fenetre, text="Gérer les titres", padx=10, pady=10)
         self.frame_titres.pack(fill=tk.X, padx=10, pady=5)
@@ -117,6 +118,7 @@ class AfficherTitres(Observateur):
         puis l'insère dans TITRES et dans l'UI (ligne de prix + liste)."""
         ticker = self.entry_ticker.get().strip().upper()
         if not ticker:
+            self._statut("Entrez un ticker.", "orange")
             return
         if ticker in self.titres:
             self._statut(f"{ticker} est déjà dans le portfolio.", "orange")
@@ -131,8 +133,8 @@ class AfficherTitres(Observateur):
         texte_bas = self.entry_seuil_bas_ajout.get().strip()
         texte_haut = self.entry_seuil_haut_ajout.get().strip()
         try:
-            seuil_bas = self._flottant_positif(texte_bas) if texte_bas else None
-            seuil_haut = self._flottant_positif(texte_haut) if texte_haut else None
+            seuil_bas = (self._flottant_positif(texte_bas) if texte_bas else None)
+            seuil_haut = (self._flottant_positif(texte_haut) if texte_haut else None)
         except ValueError:
             self._statut("Les alertes doivent être des nombres positifs.", "red")
             return
@@ -152,12 +154,18 @@ class AfficherTitres(Observateur):
             self._statut("L'alerte basse doit être inférieure à l'alerte haute.", "red")
             return
 
-        self.titres[ticker] = {
+        infos = {
             "quantite": quantite,
             "seuil_bas": seuil_bas,
             "seuil_haut": seuil_haut
         }
-        self._synchroniser_liste(ticker)
+
+        try:
+            self.portefeuille.ajouter_titre(ticker, infos)
+            self.portefeuille.prix_actuels[ticker] = (prix, ouverture)
+        except ValueError as erreur:
+            self._statut(str(erreur), "red")
+            return
 
         for entry, valeur in (
             (self.entry_ticker, ""),
@@ -180,9 +188,12 @@ class AfficherTitres(Observateur):
             return
         index, ticker = selectionne
 
-        self.listbox_titres.delete(index)
-        del self.titres[ticker]
-        self._synchroniser_liste()
+        try:
+            self.portefeuille.retirer_titre(ticker)
+        except ValueError as erreur:
+            self._statut(str(erreur), "red")
+            return
+
         self._statut(f"{ticker} retiré du portfolio.", "gray")
 
     def modifier_selection(self):
@@ -202,8 +213,11 @@ class AfficherTitres(Observateur):
             self._statut("Entrez une nouvelle quantité et/ou de nouvelles alertes.", "orange")
             return
 
+        changements = {}
+
         try:
-            quantite = self._entier_positif(texte_quantite) if texte_quantite else None
+            if texte_quantite:
+                changements["quantite"] = self._entier_positif(texte_quantite)
             if texte_bas or texte_haut:
                 if not (texte_bas and texte_haut):
                     self._statut("Les deux alertes doivent être fournies ensemble.", "red")
@@ -213,26 +227,24 @@ class AfficherTitres(Observateur):
                 if seuil_bas >= seuil_haut:
                     self._statut("L'alerte basse doit être inférieure à l'alerte haute.", "red")
                     return
-            else:
-                seuil_bas = seuil_haut = None
+
+                changements["seuil_bas"] = seuil_bas
+                changements["seuil_haut"] = seuil_haut
+
         except ValueError:
             self._statut("La quantité et les alertes doivent être des nombres positifs.", "red")
             return
 
-        changements = []
-        if quantite is not None:
-            self.titres[ticker]["quantite"] = quantite
-            changements.append(f"{quantite} action(s)")
-        if seuil_bas is not None and seuil_haut is not None:
-            self.titres[ticker]["seuil_bas"] = round(seuil_bas, 2)
-            self.titres[ticker]["seuil_haut"] = round(seuil_haut, 2)
-            changements.append(f"alertes {seuil_bas:.2f} $ / {seuil_haut:.2f} $")
-
-        self._synchroniser_liste(ticker)
+        try:
+            self.portefeuille.modifier_titre(ticker, changements)
+        except ValueError as erreur:
+            self._statut(str(erreur), "red")
+            return
+        
         for entry in (
             self.entry_nouvelle_quantite,
             self.entry_nouvelle_seuil_bas,
             self.entry_nouvelle_seuil_haut,
         ):
             entry.delete(0, tk.END)
-        self._statut(f"{ticker} mis à jour : {', '.join(changements)}.", "green")
+        self._statut(f"{ticker} mis à jour.", "green")
