@@ -37,7 +37,7 @@ class AfficherTitres(Observateur):
         self.entry_nouvelle_seuil_haut = self._champ(ligne_modif, "Alerte haute", width=7)
         tk.Button(ligne_modif, text="Modifier sélection", command=self.modifier_selection).pack(side=tk.LEFT)
 
-        self.label_statut_titres = tk.Label(self.frame_titres, text="", font=("Segeo UI", 9), fg="gray")
+        self.label_statut_titres = tk.Label(self.frame_titres, text="", font=("Segoe UI", 9), fg="gray")
         self.label_statut_titres.pack(anchor="w", pady=(5, 0))
 
         self._synchroniser_liste()
@@ -61,24 +61,26 @@ class AfficherTitres(Observateur):
         """Construit la ligne texte affichée dans la liste pour un ticker."""
         infos = self.titres[ticker]
         return (
-            f"{ticker} - {infos['quantite']} action(s)"
+            f"{ticker} - {infos['quantite']} action(s) "
             f"(alerte: {infos['seuil_bas']:.2f} $ / {infos['seuil_haut']:.2f} $)"
         )
 
     def _ticker_selectionne(self):
         """Retourne (index, ticker) du titre sélectionné dans la liste, ou None.
-        Le ticker est extrait du texte affiché (avant le tiret "—")."""
-        selection = self.listbox_titres.get(selection[0])
+        Le ticker est extrait du texte affiché (avant le tiret "-")."""
+        selection = self.listbox_titres.curselection()
         if not selection:
             return None
-        texte = self.listbox_titres.get(selection[0])
-        return selection[0], texte.split(" — ")[0]
+        index = selection[0]
+        texte = self.listbox_titres.get(index)
+        ticker = texte.split(" - ", 1)[0]
+        return index, ticker
 
     def _synchroniser_liste(self, ticker_selectionne=None):
         self.listbox_titres.delete(0, tk.END)
         for index, ticker in enumerate(self.titres):
             self.listbox_titres.insert(tk.END, self._texte_listbox(ticker))
-            if ticker == ticker == ticker_selectionne:
+            if ticker == ticker_selectionne:
                 self.listbox_titres.selection_set(index)
 
     def _statut(self, texte, couleur):
@@ -136,7 +138,7 @@ class AfficherTitres(Observateur):
             return
 
         try:
-            prix = self._recuperer_prix(ticker)
+            prix, ouverture = self._recuperer_prix(ticker)
         except (KeyError, TypeError, ValueError) as erreur:
             self._statut(str(erreur), "red")
             return
@@ -176,28 +178,22 @@ class AfficherTitres(Observateur):
         if selectionne is None:
             self._statut("Sélectionnez un titre à retirer.", "orange")
             return
+        index, ticker = selectionne
 
-        _, ticker = selectionne
-        if ticker not in self.titres:
-            self._synchroniser_liste()
-            self._statut("Le titre sélectionné n'est plus dans le portfolio.", "orange")
-            return
-
-        del self.titre[ticker]
+        self.listbox_titres.delete(index)
+        del self.titres[ticker]
         self._synchroniser_liste()
         self._statut(f"{ticker} retiré du portfolio.", "gray")
 
     def modifier_selection(self):
+        """Met à jour la quantité et/ou les seuils d'alerte du titre sélectionné.
+        Chaque champ est optionnel : seuls ceux remplis sont modifiés, mais les
+        deux seuils doivent être fournis ensemble pour rester cohérents."""
         selectionne = self._ticker_selectionne()
         if selectionne is None:
             self._statut("Sélectionnez un titre à modifier.", "orange")
             return
-
-        _, ticker = selectionne
-        if ticker not in self.titres:
-            self._synchroniser_liste()
-            self._statut("Le titre sélectionné n'est plus dans le portfolio.", "orange")
-            return
+        index, ticker = selectionne
 
         texte_quantite = self.entry_nouvelle_quantite.get().strip()
         texte_bas = self.entry_nouvelle_seuil_bas.get().strip()

@@ -2,6 +2,7 @@ from views.fenetre_principale import FenetrePrincipale
 from observateurs.afficher_prix import AfficherPrix
 from observateurs.afficher_portfolio import AfficherPortfolio
 from observateurs.afficher_alertes import AfficherAlertes
+from observateurs.afficher_titres import AfficherTitres
 from observateurs.journal_csv import JournalCSV
 from modeles.portefeuille import Portefeuille
 
@@ -17,6 +18,7 @@ if __name__ == "__main__":
     portefeuille = Portefeuille(TITRES)
     app = FenetrePrincipale()
     affichage_prix = AfficherPrix(app.fenetre, TITRES)
+    affichage_titres = AfficherTitres(app.fenetre, TITRES)
     affichage_portfolio = AfficherPortfolio(app.fenetre)
     affichage_alertes = AfficherAlertes(app.fenetre)
     journal_csv = JournalCSV("portfolio.csv")
